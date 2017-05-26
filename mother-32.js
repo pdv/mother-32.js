@@ -29,6 +29,12 @@ const switchImgWidth = 240;
 const switchWidth = 40;
 switchImg.src = "moogswitch.png";
 
+const jackImg = new Image();
+const jackImgWidth = 240;
+const jackWidth = 25;
+const jackSpace = 40;
+jackImg.src = "jack.png";
+
 const woodImg = new Image();
 woodImg.src = "wood.jpg";
 const bgImg = new Image();
@@ -36,7 +42,7 @@ bgImg.src = "bg.jpg";
 
 const leftPadding = 50;
 const topPadding = 45;
-const knobSpace = 110;
+const knobSpace = 115;
 const knobs = {
     frequency: { label: "frequency", x: 0, y: 0, value: 0, min: -1, max: 1, onChange: (val) => {
     }},
@@ -143,9 +149,7 @@ function drawBg() {
     gctx.fill();
 }
 
-function draw() {
-    gctx.clearRect(0, 0, w, h);
-    drawBg();
+function drawKnobs() {
     for (let knobKey in knobs) {
         const knob = knobs[knobKey];
         const normalized = (knob.value - knob.min) / (knob.max - knob.min);
@@ -166,6 +170,9 @@ function draw() {
         gctx.textAlign = 'center';
         gctx.fillText(knob.label.toUpperCase(), x + (knobWidth / 2), y - 7);
     }
+}
+
+function drawSwitches() {
     for (let switchKey in switches) {
         const sw = switches[switchKey];
         const offset = sw.value ? 0 : switchImgWidth;
@@ -189,6 +196,38 @@ function draw() {
         gctx.fillText(sw.on.toUpperCase(), x + (knobWidth / 2), y + (switchWidth / 2));
         gctx.fillText(sw.off.toUpperCase(), x + (knobWidth / 2), y + (switchWidth / 2) + 50);
     }
+}
+
+const jackLabels = [
+    ["ext. audio", "mix cv", "vca cv", "vca"],
+    ["noise", "vcf cutoff", "vcf res.", "vcf"],
+    ["vco 1v/oct", "vco lin fm", "vco saw", "vco pulse"],
+    ["vco mod", "lfo rate", "lfo tri", "lfo sq"],
+    ["mix 1", "mix 2", "vc mix ctl", "vc mix"],
+    ["mult", "mult 1", "mult 2", "assign"],
+    ["gate", "eg", "kb", "gate"],
+    ["tempo", "run/stop", "reset", "hold"]
+];
+
+function drawJacks() {
+    gctx.font = '7px sans-serif';
+    gctx.fillStyle = '#fff';
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 4; col++) {
+            const x = leftPadding + (8.15 * knobSpace) + col * jackSpace;
+            const y = topPadding + row * jackSpace;
+            gctx.drawImage(jackImg, x, y, jackWidth, jackWidth);
+            gctx.fillText(jackLabels[row][col].toUpperCase(), x + (jackWidth / 2), y - 3);
+        }
+    }
+}
+
+function draw() {
+    gctx.clearRect(0, 0, w, h);
+    drawBg();
+    drawKnobs();
+    drawSwitches();
+    drawJacks();
     window.requestAnimationFrame(draw);
 }
 
