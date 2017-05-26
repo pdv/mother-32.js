@@ -44,12 +44,15 @@ const leftPadding = 50;
 const topPadding = 45;
 const knobSpace = 115;
 const knobs = {
-    frequency: { label: "frequency", x: 0, y: 0, value: 0, min: -1, max: 1, onChange: (val) => {
-    }},
+    frequency: { label: "frequency", x: 0, y: 0, value: 0, min: -10, max: 10, onChange: (val) => {}},
     pulseWidth: { label: "pulse width", x: 2, y: 0, value: 0.5, min: 0, max: 1, onChange: (val) => {}},
     mix: { label: "mix", x: 3, y: 0, value: 0.5, min: 0, max: 1, onChange: (val) => {}},
-    cutoff: { label: "cutoff", x: 4, y: 0, value: 200, min: 20, max: 2000, onChange: (val) => {}},
-    resonance: { label: "resonance", x: 5, y: 0, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
+    cutoff: { label: "cutoff", x: 4, y: 0, value: 200, min: 20, max: 2000, onChange: (val) => {
+        vcf.frequency.value = val;
+    }},
+    resonance: { label: "resonance", x: 5, y: 0, value: 0.1, min: 0, max: 3, onChange: (val) => {
+        vcf.Q.value = val;
+    }},
     volume: { label: "volume", x: 7, y: 0, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
     glide: { label: "glide", x: 0, y: 1, value: 0, min: 0, max: 1, onChange: (val) => {}},
     vcoMod: { label: "vco mod amount", x: 2, y: 1, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
@@ -57,15 +60,19 @@ const knobs = {
     tempo: { label: "tempo/gate", x: 1, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
     lfoRate: { label: "lfo rate", x: 2, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
     attack: { label: "attack", x: 4, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
-    decay: { label: "decay", x: 6, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
+    decay: { label: "decay", x: 6, y: 2, value: 0, min: 0, max: 3, onChange: (val) => {}},
     vcMix: { label: "vc mix", x: 7, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}}
 };
 const switches = {
-    vcoWave: { label: "vco wave", on: "sqr", off: "saw", x: 1, y: 0, value: false, onChange: (on) => {}},
+    vcoWave: { label: "vco wave", on: "sqr", off: "saw", x: 1, y: 0, value: true, onChange: (on) => {
+        nodes.vco.type = on ? 'square' : 'sawtooth';
+    }},
     vcaMode: { label: "vca mode", on: "on", off: "eg", x: 6, y: 0, value: false, onChange: (on) => {}},
     vcoModSrc: { label: "vco mod source", on: "eg", off: "lfo", x: 1, y: 1, value: true, onChange: (on) => {}},
     vcoModDest: { label: "vco mod dest", on: "pulse width", off: "frequency", x: 3, y: 1, value: true, onChange: (on) => {}},
-    vcfMode: { label: "vcf mode", on: "high pass", off: "low pass", x: 4, y: 1, value: true, onChange: (on) => {}},
+    vcfMode: { label: "vcf mode", on: "high pass", off: "low pass", x: 4, y: 1, value: true, onChange: (on) => {
+        nodes.vcf.type = on ? 'highpass' : 'lowpass';
+    }},
     vcfModSrc: { label: "vcf mod source", on: "eg", off: "lfo", x: 5, y: 1, value: false, onChange: (on) => {}},
     vcfModPol: { label: "vcf mod polarity", on: "+", off: "-", x: 7, y: 1, value: true, onChange: (on) => {}},
     lfoWave: { label: "lfo wave", on: "sqr", off: "tri", x: 3, y: 2, value: false, onChange: (on) => {}},
@@ -236,5 +243,80 @@ function draw() {
 let actx = new window.AudioContext();
 let nodes = {
     vco: actx.createOscillator(),
-    lfo: actx.createOscillator()
+    lfo: actx.createOscillator(),
+    vcf: actx.createBiquadFilter(),
+    vca: actx.createGain(),
+    limiter: actx.createGain()
 };
+
+function initNodes() {
+    nodes.vco.type = 'square';
+    nodes.vco.frequency.value = 440;
+    nodes.vcf.type = 'lowpass';
+    nodes.vca.gain.value = 0;
+    nodes.limiter.gain.value = 0.1;
+
+    nodes.vco.connect(nodes.vcf);
+    nodes.vcf.connect(nodes.vca);
+    nodes.vca.connect(nodes.limiter);
+
+    nodes.limiter.connect(actx.destination);
+
+    nodes.vco.start();
+}
+
+let octave = -1;
+let activeNotes = [];
+
+function midiToHz(note) {
+    return 440 * (Math.pow(2, (note - 69) / 12));
+}
+
+const notes = ['a', 'w', 's', 'e', 'd', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'k'];
+
+function playNote(key) {
+    const idx = notes.indexOf(key);
+    if (idx >= 0) {
+        const note = 60 + (12 * octave) + idx;
+        console.log(note);
+        const hz = midiToHz(note);
+        nodes.vco.frequency.setValueAtTime(hz + knobs.frequency.value, actx.currentTime);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+document.addEventListener('keydown', (event) => {
+    const key = event.key;
+    if (key === 'z') {
+        octave--;
+    } else if (key === 'x') {
+        octave++;
+    } else if (!activeNotes.includes(key) && playNote(key)) {
+        nodes.vca.gain.cancelScheduledValues(actx.currentTime);
+        nodes.vca.gain.linearRampToValueAtTime(1.0, actx.currentTime + knobs.attack.value);
+        if (!switches.sustain.value) {
+            nodes.vca.gain.linearRampToValueAtTime(0, actx.currentTime + knobs.attack.value + knobs.decay.value);
+        }
+        activeNotes.push(key);
+    }
+});
+
+document.addEventListener('keyup', (event) => {
+    const idx = activeNotes.indexOf(event.key);
+    console.log(idx);
+    if (idx >= 0) {
+        activeNotes.splice(idx, 1);
+    }
+    console.log(activeNotes);
+    if (activeNotes.length == 0) {
+        nodes.vca.gain.cancelScheduledValues(actx.currentTime);
+        nodes.vca.gain.linearRampToValueAtTime(0, actx.currentTime + knobs.decay.value);
+    } else {
+        playNote(activeNotes[activeNotes.length - 1]);
+    }
+});
+
+
+initNodes();
