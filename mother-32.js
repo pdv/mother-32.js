@@ -16,7 +16,7 @@ const gctx = canvas.getContext('2d');
 
 // Knobs
 
-const knobWidth = 60;
+const knobWidth = 80;
 const knobFrames = 63;
 const knobDragScale = 0.0005;
 const knobImg = new Image();
@@ -26,17 +26,28 @@ knobImg.onload = draw;
 
 const woodImg = new Image();
 woodImg.src = "wood.jpg";
+const bgImg = new Image();
+bgImg.src = "bg.jpg";
 
 const leftPadding = 50;
-const topPadding = 30;
-const knobSpace = 100;
+const topPadding = 45;
+const knobSpace = 120;
 const knobs = {
     frequency: { label: "frequency", x: 0, y: 0, value: 0, min: -1, max: 1, onChange: (val) => {
     }},
     pulseWidth: { label: "pulse width", x: 2, y: 0, value: 0.5, min: 0, max: 1, onChange: (val) => {}},
+    mix: { label: "mix", x: 3, y: 0, value: 0.5, min: 0, max: 1, onChange: (val) => {}},
+    cutoff: { label: "cutoff", x: 4, y: 0, value: 200, min: 20, max: 2000, onChange: (val) => {}},
+    resonance: { label: "resonance", x: 5, y: 0, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
+    volume: { label: "volume", x: 7, y: 0, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
     glide: { label: "glide", x: 0, y: 1, value: 0, min: 0, max: 1, onChange: (val) => {}},
-    tempo: { label: "tempo/gate", x: 0, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
-    lfoRate: { label: "lfo rate", x: 1, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}}
+    vcoMod: { label: "vco mod amount", x: 2, y: 1, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
+    vcfMod: { label: "vcf mod amount", x: 6, y: 1, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
+    tempo: { label: "tempo/gate", x: 1, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
+    lfoRate: { label: "lfo rate", x: 2, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
+    attack: { label: "attack", x: 4, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
+    decay: { label: "decay", x: 6, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
+    vcMix: { label: "vc mix", x: 7, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}}
 
 };
 
@@ -86,7 +97,8 @@ document.addEventListener('mousemove', (e) => {
 }, false);
 
 function drawBg() {
-    gctx.fillStyle = '#000';
+    gctx.drawImage(bgImg, 0, 0, w, h);
+    gctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     gctx.fillRect(0, 0, w, h);
     gctx.drawImage(woodImg, 0, 0, 20, h);
     gctx.drawImage(woodImg, w - 20, 0, 20, h);
@@ -111,8 +123,9 @@ function draw() {
                        knobWidth,
                        knobWidth);
         gctx.fillStyle = '#fff';
-        gctx.font = '10px sans-serif';
-        gctx.fillText(knob.label.toUpperCase(), x, y - 5);
+        gctx.font = '11px sans-serif';
+        gctx.textAlign = 'center';
+        gctx.fillText(knob.label.toUpperCase(), x + (knobWidth / 2), y - 7);
     }
     window.requestAnimationFrame(draw);
 }
