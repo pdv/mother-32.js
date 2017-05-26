@@ -47,11 +47,11 @@ const knobs = {
     frequency: { label: "frequency", x: 0, y: 0, value: 0, min: -10, max: 10, onChange: (val) => {}},
     pulseWidth: { label: "pulse width", x: 2, y: 0, value: 0.5, min: 0, max: 1, onChange: (val) => {}},
     mix: { label: "mix", x: 3, y: 0, value: 0.5, min: 0, max: 1, onChange: (val) => {}},
-    cutoff: { label: "cutoff", x: 4, y: 0, value: 200, min: 20, max: 2000, onChange: (val) => {
-        vcf.frequency.value = val;
+    cutoff: { label: "cutoff", x: 4, y: 0, value: 200, min: 20, max: 20000, scale: 10000, onChange: (val) => {
+        nodes.vcf.frequency.value = val;
     }},
     resonance: { label: "resonance", x: 5, y: 0, value: 0.1, min: 0, max: 3, onChange: (val) => {
-        vcf.Q.value = val;
+        nodes.vcf.Q.value = val;
     }},
     volume: { label: "volume", x: 7, y: 0, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
     glide: { label: "glide", x: 0, y: 1, value: 0, min: 0, max: 1, onChange: (val) => {}},
@@ -126,7 +126,7 @@ document.addEventListener('mousemove', (e) => {
         for (let knobKey in knobs) {
             let knob = knobs[knobKey];
             if (contains(knob, mouse.down)) {
-                knob.value = clip(knob.value + dy, knob.min, knob.max);
+                knob.value = clip(knob.value + (dy * (knob.scale || 1)), knob.min, knob.max);
                 knob.onChange(knob.value);
                 break;
             }
