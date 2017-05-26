@@ -24,6 +24,11 @@ const knobImgWidth = 240;
 knobImg.src = "moogknob.png";
 knobImg.onload = draw;
 
+const switchImg = new Image();
+const switchImgWidth = 240;
+const switchWidth = 40;
+switchImg.src = "moogswitch.png";
+
 const woodImg = new Image();
 woodImg.src = "wood.jpg";
 const bgImg = new Image();
@@ -31,7 +36,7 @@ bgImg.src = "bg.jpg";
 
 const leftPadding = 50;
 const topPadding = 45;
-const knobSpace = 120;
+const knobSpace = 110;
 const knobs = {
     frequency: { label: "frequency", x: 0, y: 0, value: 0, min: -1, max: 1, onChange: (val) => {
     }},
@@ -48,7 +53,17 @@ const knobs = {
     attack: { label: "attack", x: 4, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
     decay: { label: "decay", x: 6, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
     vcMix: { label: "vc mix", x: 7, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}}
-
+};
+const switches = {
+    vcoWave: { label: "vco wave", on: "sqr", off: "saw", x: 1, y: 0, value: false, onChange: (on) => {}},
+    vcaMode: { label: "vca mode", on: "on", off: "eg", x: 6, y: 0, value: false, onChange: (on) => {}},
+    vcoModSrc: { label: "vco mod source", on: "eg", off: "lfo", x: 1, y: 1, value: true, onChange: (on) => {}},
+    vcoModDest: { label: "vco mod dest", on: "pulse width", off: "frequency", x: 3, y: 1, value: true, onChange: (on) => {}},
+    vcfMode: { label: "vcf mode", on: "high pass", off: "low pass", x: 4, y: 1, value: true, onChange: (on) => {}},
+    vcfModSrc: { label: "vcf mod source", on: "eg", off: "lfo", x: 5, y: 1, value: false, onChange: (on) => {}},
+    vcfModPol: { label: "vcf mod polarity", on: "+", off: "-", x: 7, y: 1, value: true, onChange: (on) => {}},
+    lfoWave: { label: "lfo wave", on: "sqr", off: "tri", x: 3, y: 2, value: false, onChange: (on) => {}},
+    sustain: { label: "sustain", on: "on", off: "off", x: 5, y: 2, value: false, onChange: (on) => {}}
 };
 
 let mouse = {
@@ -57,8 +72,10 @@ let mouse = {
 };
 
 function contains(knob, mousePos) {
-    return knob.x < mousePos.x && mousePos.x < knob.x + knobWidth
-        && knob.y < mousePos.y && mousePos.y < knob.y + knobWidth;
+    const x = leftPadding + (knob.x * knobSpace);
+    const y = topPadding + (knob.y * knobSpace);
+    return x < mousePos.x && mousePos.x < x + knobWidth
+        && y < mousePos.y && mousePos.y < y + knobWidth;
 }
 
 function clip(value, min, max) {
@@ -78,6 +95,14 @@ document.addEventListener('mousedown', (e) => {
 
 document.addEventListener('mouseup', (e) => {
     mouse.current = getMousePos(canvas, e);
+    for (let switchKey in switches) {
+        let sw = switches[switchKey];
+        if (contains(sw, mouse.down)) {
+            sw.value = !sw.value;
+            sw.onChange(sw.value);
+            break;
+        }
+    }
     mouse.down = undefined;
 }, false);
 
@@ -100,8 +125,22 @@ function drawBg() {
     gctx.drawImage(bgImg, 0, 0, w, h);
     gctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     gctx.fillRect(0, 0, w, h);
+
+    // Side 
     gctx.drawImage(woodImg, 0, 0, 20, h);
     gctx.drawImage(woodImg, w - 20, 0, 20, h);
+
+    // MOTHER-32
+    gctx.font = '20px sans-serif';
+    gctx.fillStyle = '#fff';
+    gctx.textAlign = 'left';
+    gctx.fillText("MOTHER-32", leftPadding, h - 20);
+
+    // on light
+    gctx.fillStyle = 'red';
+    gctx.beginPath();
+    gctx.arc(leftPadding + (knobWidth / 2), topPadding + (2 * knobSpace) + (knobWidth / 2), 15, 0, 2 * Math.PI, false);
+    gctx.fill();
 }
 
 function draw() {
@@ -126,6 +165,29 @@ function draw() {
         gctx.font = '11px sans-serif';
         gctx.textAlign = 'center';
         gctx.fillText(knob.label.toUpperCase(), x + (knobWidth / 2), y - 7);
+    }
+    for (let switchKey in switches) {
+        const sw = switches[switchKey];
+        const offset = sw.value ? 0 : switchImgWidth;
+        const x = leftPadding + (sw.x * knobSpace);
+        const y = topPadding + (sw.y * knobSpace);
+        gctx.drawImage(switchImg,
+                       0,
+                       offset,
+                       switchImgWidth,
+                       switchImgWidth,
+                       x + switchWidth / 2,
+                       y + switchWidth / 2,
+                       switchWidth,
+                       switchWidth);
+        gctx.fillStyle = '#fff';
+        gctx.font = '9px sans-serif';
+        gctx.textAlign = 'center';
+        gctx.fillText(sw.label.toUpperCase(), x + (knobWidth / 2), y);
+        // on off label
+        gctx.font = '7px sans-serif';
+        gctx.fillText(sw.on.toUpperCase(), x + (knobWidth / 2), y + (switchWidth / 2));
+        gctx.fillText(sw.off.toUpperCase(), x + (knobWidth / 2), y + (switchWidth / 2) + 50);
     }
     window.requestAnimationFrame(draw);
 }
