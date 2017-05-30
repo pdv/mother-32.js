@@ -55,10 +55,16 @@ const knobs = {
     }},
     volume: { label: "volume", x: 7, y: 0, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
     glide: { label: "glide", x: 0, y: 1, value: 0, min: 0, max: 1, onChange: (val) => {}},
-    vcoMod: { label: "vco mod amount", x: 2, y: 1, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
-    vcfMod: { label: "vcf mod amount", x: 6, y: 1, value: 0.1, min: 0, max: 1, onChange: (val) => {}},
+    vcoMod: { label: "vco mod amount", x: 2, y: 1, value: 0.1, min: 0, max: 200, scale: 100, onChange: (val) => {
+        nodes.lfoVco.gain.value = val;
+    }},
+    vcfMod: { label: "vcf mod amount", x: 6, y: 1, value: 0.1, min: 0, max: 2000, scale: 100, onChange: (val) => {
+        nodes.lfoVcf.gain.value = val;
+    }},
     tempo: { label: "tempo/gate", x: 1, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
-    lfoRate: { label: "lfo rate", x: 2, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
+    lfoRate: { label: "lfo rate", x: 2, y: 2, value: 10, min: 0.5, max: 100, scale: 300, onChange: (val) => {
+        nodes.lfo.frequency.value = val;
+    }},
     attack: { label: "attack", x: 4, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}},
     decay: { label: "decay", x: 6, y: 2, value: 0, min: 0, max: 3, onChange: (val) => {}},
     vcMix: { label: "vc mix", x: 7, y: 2, value: 0, min: 0, max: 1, onChange: (val) => {}}
@@ -244,6 +250,8 @@ let actx = new window.AudioContext();
 let nodes = {
     vco: actx.createOscillator(),
     lfo: actx.createOscillator(),
+    lfoVcf: actx.createGain(),
+    lfoVco: actx.createGain(),
     vcf: actx.createBiquadFilter(),
     vca: actx.createGain(),
     limiter: actx.createGain()
@@ -255,14 +263,23 @@ function initNodes() {
     nodes.vcf.type = 'lowpass';
     nodes.vca.gain.value = 0;
     nodes.limiter.gain.value = 0.1;
+    nodes.lfo.type = 'sine';
+    nodes.lfoVcf.gain.value = 0;
+    nodes.lfoVco.gain.value = 0;
 
     nodes.vco.connect(nodes.vcf);
     nodes.vcf.connect(nodes.vca);
     nodes.vca.connect(nodes.limiter);
 
+    nodes.lfo.connect(nodes.lfoVcf);
+    nodes.lfoVcf.connect(nodes.vcf.frequency);
+    nodes.lfo.connect(nodes.lfoVco);
+    nodes.lfoVco.connect(nodes.vco.frequency);
+
     nodes.limiter.connect(actx.destination);
 
     nodes.vco.start();
+    nodes.lfo.start();
 }
 
 let octave = -1;
